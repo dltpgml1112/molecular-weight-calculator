@@ -235,10 +235,38 @@ elif menu == "🧬🌐 NCBI 검색":
 
 
 elif menu == "💊 화합물 분석":
-    st.title("💊 화합물 분석기 (SMILES)")
-    smiles = st.text_input("SMILES 입력 (예: CC(=O)OC1=CC=CC=C1C(=O)O):")
+    st.title("💊 화합물 분석기")
+    st.write("약물 이름(영어) 또는 SMILES로 직접 검색할 수 있어요.")
+    
+    input_type = st.radio("입력 방식:", ["이름으로 검색 (예: aspirin)", "SMILES 직접 입력"])
+    
+    smiles = None
+    compound_name = None
+    
+    if input_type == "이름으로 검색 (예: aspirin)":
+        name_input = st.text_input("약물 이름을 입력하세요 (영어):", placeholder="예: aspirin, amphetamine, caffeine")
+        
+        if name_input:
+            with st.spinner(f"'{name_input}' 검색 중..."):
+                try:
+                    compounds = pcp.get_compounds(name_input, 'name')
+                    if compounds:
+                        smiles = compounds[0].canonical_smiles
+                        compound_name = name_input
+                        st.success(f"✅ '{name_input}' 찾았습니다!")
+                        st.code(f"SMILES: {smiles}")
+                    else:
+                        st.error(f"⚠️ '{name_input}'을(를) 찾을 수 없습니다. 영어 이름으로 다시 시도해보세요.")
+                except Exception as e:
+                    st.error(f"검색 중 오류 발생: {e}")
+    
+    else:  # SMILES 직접 입력
+        smiles = st.text_input("SMILES 입력 (예: CC(=O)OC1=CC=CC=C1C(=O)O):")
+        compound_name = smiles
     
     if st.button("분석하기"):
+        if smiles:
+            mol = Chem.MolFromSmiles(smiles)
         if smiles:
             mol = Chem.MolFromSmiles(smiles)
             if mol is None:
@@ -264,11 +292,48 @@ elif menu == "💊 화합물 분석":
 
 elif menu == "💊🔬 화합물 유사도 비교":
     st.title("💊🔬 화합물 유사도 비교기")
-    col1, col2 = st.columns(2)
-    with col1:
-        smiles1 = st.text_input("화합물 1 SMILES:")
-    with col2:
-        smiles2 = st.text_input("화합물 2 SMILES:")
+    st.write("두 약물의 이름(영어)만 입력하면 구조 유사도를 비교해드려요.")
+    
+    input_type = st.radio("입력 방식:", ["이름으로 검색", "SMILES 직접 입력"], key="compare_input_type")
+    
+    smiles1, smiles2 = None, None
+    name1, name2 = None, None
+    
+    if input_type == "이름으로 검색":
+        col1, col2 = st.columns(2)
+        with col1:
+            name1 = st.text_input("화합물 1 이름:", placeholder="예: aspirin")
+        with col2:
+            name2 = st.text_input("화합물 2 이름:", placeholder="예: ibuprofen")
+        
+        if name1:
+            try:
+                compounds1 = pcp.get_compounds(name1, 'name')
+                if compounds1:
+                    smiles1 = compounds1[0].canonical_smiles
+                    st.caption(f"✅ {name1} → {smiles1}")
+                else:
+                    st.warning(f"⚠️ '{name1}'을(를) 찾을 수 없습니다.")
+            except Exception as e:
+                st.error(f"검색 오류: {e}")
+        
+        if name2:
+            try:
+                compounds2 = pcp.get_compounds(name2, 'name')
+                if compounds2:
+                    smiles2 = compounds2[0].canonical_smiles
+                    st.caption(f"✅ {name2} → {smiles2}")
+                else:
+                    st.warning(f"⚠️ '{name2}'을(를) 찾을 수 없습니다.")
+            except Exception as e:
+                st.error(f"검색 오류: {e}")
+    
+    else:  # SMILES 직접 입력
+        col1, col2 = st.columns(2)
+        with col1:
+            smiles1 = st.text_input("화합물 1 SMILES:")
+        with col2:
+            smiles2 = st.text_input("화합물 2 SMILES:")
     
     if st.button("비교하기"):
         if smiles1 and smiles2:
