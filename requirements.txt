@@ -1,4 +1,4 @@
 streamlit
 biopython
-rdkit
+rdkit-pypi
 pubchempy
